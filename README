@@ -1,0 +1,10 @@
+Luyu, I think I see what you're going to have to do when you make these buttons. 
+
+When using the "$menu.file add command" function, or whatever it is, the option
+"-command" should be followed by the name of the invoked procedure in brackets. Examples of this are located on lines 45-51 of icbk_gui.tcl and elsewhere. In this way, procedures are assigned to buttons on the GUI.
+
+It looks like you can put multiple functions into a single set of brackets, separated by semicolons, and they will all run. 
+
+I'm writing a function called "::ICBK::loadPdb" which you will want to assign to the button "Load PDB". The button will need to invoke a procedure called "tk_getOpenFile" that prompts the user to browse around for the filename they want to use. An example of this command appears on icbk_gui.tcl line 1460. The filename obtained must be passed into ::ICBK::loadpdb. It will be the only argument passed in. 
+
+You can certainly design and test the button described above before I finish the procedure that actually uses the filename obtained through the procedure described above. I encourage you to do so. In the meantime, I will work on my portion.
