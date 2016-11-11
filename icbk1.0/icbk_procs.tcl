@@ -105,6 +105,7 @@ proc ::ICBK::writeDistanceGrid {args} {
 
 proc ::ICBK::readDistanceGrid {args} {
     set workingDir $::env(ICBKDIR)
+    puts $workingDir
     set cutz0 -20.0 ;#left boundary
     set cutz1 20.0  ;#right boundary  
     set r 30.0    ;#unit A
@@ -169,7 +170,7 @@ proc ::ICBK::readDistanceGrid {args} {
 
 
 proc ::ICBK::predictCurrent {args} {
-    set workdingDir ::env(ICBKDIR)
+    set workingDir $::env(ICBKDIR)
     ########parameter is:a=4.1 b=0.25
     set kmin 0
     set kmax 1   ;########[[[[[[[[[[must change]]]]]]]]]]
@@ -275,6 +276,8 @@ proc ::ICBK::predictCurrent {args} {
 	set t [expr ($k+0.0*$dk)*$dcdfreq*$timestep*1.0e-6]   ;#unit ms 
 	#puts "$t $current"
 	puts $output "$t $current"
+	
+	set ::ICBK::test_current $current
 	close $file
     }
     #close $file

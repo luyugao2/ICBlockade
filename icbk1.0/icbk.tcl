@@ -19,7 +19,7 @@ if { [info exists tk_version] } {
 	package require tile
 
 	# Start GUI
-	if {[catch {source [file join $env(ICBKDIR) icbk_gui.tcl]}]} {
+	if {[catch {source [file join $env(ICBKDIR) icbk_gui_0.tcl]}]} {
 		puts "Fatal error! Could not load icbk_gui.tcl"
 		return 1;
 	}
