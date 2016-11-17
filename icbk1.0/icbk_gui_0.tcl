@@ -18,11 +18,8 @@ proc ::ICBK::gui::icbk_gui {} {
     catch {destroy $window}
     toplevel $window
 
-    grid columnconfigure $window 0 -weight 1
-    grid rowconfigure    $window 0 -weight 1
-
-    wm title      $window "Pore Explorer"    ; # window title
-    wm resizable  $window 0 0                ; # make window resizable
+    wm title      $window "Ionic Current Blockade"    ; # window title
+    wm resizable  $window 1 1                ; # make window resizable
 #    wm geometry   $window 640x480
 #    wm minsize    $window 700 520            ; # minimum window size
 #    wm maxsize    $window 700 520            ; # maximum window size
@@ -72,20 +69,80 @@ proc ::ICBK::gui::icbk_gui {} {
     $menu.options add checkbutton -label "Show advanced settings" -variable ::ICBK::gui::showadvanced
     ### END of menubar
 
+    grid columnconfigure $window {0 1 2} -weight 1
+    grid rowconfigure    $window {0 1} -weight 1
+
     ###
-    # MAIN frame holding notebook top menu (tabs), (soon) log-console
+    # MAIN frame holding notebook top menu (tabs), (soon) log-console 
     #grid $tab1.f1 -column 0 -sticky nsew -padx 10 -pady "10 0"
-    ttk::frame $window.hlf -height 80 -width 60
-    grid $window.hlf  -column 0 -row 0 -sticky nsew
-    grid columnconfigure $window.hlf 0 -weight 1
-    grid    rowconfigure $window.hlf {0 1} -weight 1
-    ttk::button $window.hlf.test_button1 -text "load pdb" -width 35 -command {::ICBK::doEverything {}}
-#    ttk::button $window.hlf.test_button1 -text "load pdb" -width 35 
-    ttk::button $window.hlf.test_button2 -text "run" -width 35
-    ttk::label  $window.hlf.cur_l -text "current:" -width 10 -justify center
-    ttk::entry $window.hlf.test_button3 -textvariable ::ICBK::test_current  -width 42  -justify right
-    grid $window.hlf.test_button1 $window.hlf.test_button2
-    grid $window.hlf.cur_l $window.hlf.test_button3 -sticky nsew
+    #title frame 
+    ttk::frame $window.title -height 150 -relief solid -padding 5
+    #-width 80 -relief solid -padding 5
+    ttk::label $window.title.main -text "Ionic Current Blockade" -justify center
+    grid $window.title -column 0 -row 0 -sticky nsew -columnspan 3
+    #grid rowconfigure $window.title 0 -weight 1
+    #grid columnconfigure $window.title 0 -weight 1
+    pack $window.title.main -fill none -expand 1
+    #-fill both -expand 1
+
+
+    #control frame 
+    ttk::frame $window.control -height 80 
+    #-width 80
+    grid $window.control  -column 1 -row 2 -columnspan 2 -sticky nsew
+    grid columnconfigure $window.control {0 1} -weight 1
+    grid rowconfigure    $window.control {0} -weight 1
+    #grid $window.control  -column 0 -row 1 -sticky nsew
+    #grid columnconfigure $window.control {0 1} -weight 1
+    #grid rowconfigure $window.control {0} -weight 1
+    ttk::button $window.control.load -text "Load PDB" 
+    ttk::button $window.control.run -text "Calculate" 
+    grid $window.control.load -column 0 -row 0 -sticky nsew
+    grid $window.control.run -column 1 -row 0 -sticky nsew
+    ttk::label $window.empty
+    grid $window.empty -column 0 -row 2 -sticky nsew
+    #grid $window.control.load $window.control.run -sticky nsew
+
+
+    #input frame and output
+    ttk::frame $window.io -height 80 
+    grid columnconfigure $window.io 0 -weight 1
+    grid columnconfigure $window.io 1 -weight 5
+    grid rowconfigure    $window.io {0 1 2 3} -weight 1
+    #-width 80
+    grid $window.io -row 1 -column 0 -sticky nsew -columnspan 3
+    ttk::label  $window.io.concentration_label -text "Concentration:" -justify center
+    ttk::entry $window.io.concentration_display
+    ttk::label  $window.io.bias_label -text "Applied Bias:" -justify center
+    ttk::entry $window.io.bias_display 
+    #-textvariable
+    ttk::label  $window.io.conduct_label -text "Conductivity:" -justify center
+    ttk::entry $window.io.conduct_display 
+    #-textvariable
+    grid $window.io.concentration_label -column 0 -row 0 -sticky nsew
+    grid $window.io.concentration_display -column 1 -row 0 -sticky nsew
+    grid $window.io.bias_label -column 0 -row 1 -sticky nsew
+    grid $window.io.bias_display -column 1 -row 1 -sticky nsew
+    grid $window.io.conduct_label -column 0 -row 2 -sticky nsew
+    grid $window.io.conduct_display -column 1 -row 2 -sticky nsew
+    #grid $window.input.conduct_display -column 1 - row 1 
+
+
+
+    ##result frame 
+    #ttk::frame $window.result -height 80 -width 80
+    #grid $window.result -row 3 -column 0 -sticky nsew
+    ttk::label  $window.io.current_label -text "Current:" -justify center
+    #-width 10 -justify center
+    ttk::entry $window.io.current_display -textvariable ::ICBK::test_current
+    grid $window.io.current_display -row 3 -column 1 -sticky nsew
+    grid $window.io.current_label  -row 3 -column 0 -sticky nsew
+    #-width 42  -justify right
+    #grid $window.hlf.cur_l -row  0 -column 0
+    #grid $window.hlf.test_entry -row 0 -column 1
+    #grid $window.hlf.test_button1 $window.hlf.test_button2
+    #grid $window.hlf.test_button2 -column 1 -row 1 
+    #-column 1 -row 1 -columnspan 3
     # End of Tab 2
     ###
 
@@ -707,7 +764,7 @@ proc ::ICBK::gui::buildBDmodel {} {
     puts "ICBK: Checking simulation box size"
     foreach {min max} [::ICBK::boundingbox] {break}
     set size [vecsub $max $min]
-#    ::ICBK::initializeDimensions
+    #::ICBK::initializeDimensions
     foreach el {ax ay az bx by bz cx cy cz ox oy oz} { variable ::ICBK::$el }
     foreach {ax by cz} $size {break}
 
@@ -1253,7 +1310,7 @@ proc ::ICBK::initialize {} {
     set ::ICBK::resolution 0.5
     set ::ICBK::test_current 0.0
 
-#    ::ICBK::initializeDimensions
+    #::ICBK::initializeDimensions
 
     ### Tab 3
     set ::ICBK::pdbList ""
@@ -1330,3 +1387,15 @@ proc ::ICBK::newProject {} {
     ::ICBK::initialize_gui
 }
 
+
+
+### Fonts available in Ttk
+# TkDefaultFont          The default for all GUI items not otherwise specified.
+# TkTextFont             Used for entry widgets, listboxes, etc.
+# TkFixedFont            A standard fixed-width font.
+# TkMenuFont             The font used for menu items.
+# TkHeadingFont          The font typically used for column headings in lists and tables.
+# TkCaptionFont          A font for window and dialog caption bars.
+# TkSmallCaptionFont     A smaller caption font for subwindows or tool dialogs
+# TkIconFont             A font for icon captions.
+# TkTooltipFont          A font for tooltips
