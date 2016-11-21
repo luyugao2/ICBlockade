@@ -95,8 +95,12 @@ proc ::ICBK::gui::icbk_gui {} {
     #grid $window.control  -column 0 -row 1 -sticky nsew
     #grid columnconfigure $window.control {0 1} -weight 1
     #grid rowconfigure $window.control {0} -weight 1
-    ttk::button $window.control.load -text "Load PDB" 
-    ttk::button $window.control.run -text "Calculate" 
+    lappend ::ICBK::argList $::ICBK::molID  
+    lappend ::ICBK::argList $::ICBK::molarity
+    lappend ::ICBK::argList $::ICBK::voltage
+
+    ttk::button $window.control.load -text "Load PDB" -command {set ::ICBK::molID [::ICBK::loadPdb "$::env(ICBKDIR)/NTL9.pdb"]}
+    ttk::button $window.control.run -text "Calculate" -command {set ::ICBK::test_current [::ICBK::runProgram "$::ICBK::argList"]}
     grid $window.control.load -column 0 -row 0 -sticky nsew
     grid $window.control.run -column 1 -row 0 -sticky nsew
     ttk::label $window.empty
@@ -112,9 +116,9 @@ proc ::ICBK::gui::icbk_gui {} {
     #-width 80
     grid $window.io -row 1 -column 0 -sticky nsew -columnspan 3
     ttk::label  $window.io.concentration_label -text "Concentration:" -justify center
-    ttk::entry $window.io.concentration_display
+    ttk::entry $window.io.concentration_display -textvariable ::ICBK::molarity
     ttk::label  $window.io.bias_label -text "Applied Bias:" -justify center
-    ttk::entry $window.io.bias_display 
+    ttk::entry $window.io.bias_display -textvariable ::ICBK::voltage
     #-textvariable
     ttk::label  $window.io.conduct_label -text "Conductivity:" -justify center
     ttk::entry $window.io.conduct_display 
@@ -1309,6 +1313,10 @@ proc ::ICBK::initialize {} {
     set ::ICBK::workdir [pwd]
     set ::ICBK::resolution 0.5
     set ::ICBK::test_current 0.0
+    set ::ICBK::molarity 1.0
+    set ::ICBK::voltage 0.3
+    set ::ICBK::molID 0
+    set ::ICBK::argList {}
 
     #::ICBK::initializeDimensions
 

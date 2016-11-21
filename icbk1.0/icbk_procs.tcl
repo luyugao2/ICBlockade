@@ -1,23 +1,48 @@
-proc ::ICBK::doEverything {args} {
-    set dir "$::env(ICBKDIR)"
+# # Meant for debugging only. Slated for destruction.
+# proc ::ICBK::doEverything {args} {
+#     set dir "$::env(ICBKDIR)"
+#     package require psfgen
+#     set molID [::ICBK::loadPdb "$dir/NTL9.pdb"]
+#     ::ICBK::combinePoreProtein "$molID"
+#     resetpsf
+#     ::ICBK::writeDistanceGrid {}
+#     resetpsf
+#     ::ICBK::readDistanceGrid {}
+#     resetpsf
+#     ::ICBK::predictCurrent    
+# }
+
+
+# Take the inputs we've been given and use them to calculate current
+proc ::ICBK::runProgram {args} {
+    puts $args
+    set nargs [llength $args] 
+    if {$nargs != 3} {puts "Error! GUI should provide molID, molarity, voltage to [lindex [info level [info level]] 0]"}
+    set molID [lindex [lindex $args 0] 0]
+    set molarity [lindex [lindex $args 0] 1]
+    set voltage [lindex [lindex $args 0] 2]
+
     package require psfgen
-    set molID [::ICBK::loadPdb "$dir/NTL9.pdb"]
     ::ICBK::combinePoreProtein "$molID"
     resetpsf
     ::ICBK::writeDistanceGrid {}
     resetpsf
     ::ICBK::readDistanceGrid {}
     resetpsf
-    ::ICBK::predictCurrent    
+    set calculatedCurrent [::ICBK::predictCurrent "$molarity $voltage"]
+
+    return $calculatedCurrent
 }
 
 
 # Load a molecule
 proc ::ICBK::loadPdb {args} {
-    set nargs [llength $args]
-    if {$nargs != 1} {puts "Error! No pdb filename entered."; return -1}
 
-    set pdb [lindex $args 0]
+    set pdb [tk_getOpenFile -title "Select PDB file" -initialdir "/" -multiple 0 -filetypes {.pdb}]
+#    set nargs [llength $args]
+#    if {$nargs != 1} {puts "Error! No pdb filename entered."; return -1}
+
+    #set pdb [lindex $args 0]
     if {![catch {mol new $pdb} caught]} {	
 	set molID [molinfo top]
 	return $molID
@@ -30,7 +55,8 @@ proc ::ICBK::loadPdb {args} {
 
 # generate the psf and pdb file of protein
 proc ::ICBK::combinePoreProtein {args} {
-    set proname $::env(ICBKDIR)/proteinTemp
+    set workingDir $::env(ICBKDIR)
+    set proname $workingDir/proteinTemp
 
     set nargs [llength $args]
     if {$nargs != 1} {puts "Error! No molecule ID specified."; return -1}
@@ -42,7 +68,7 @@ proc ::ICBK::combinePoreProtein {args} {
     }
     package require psfgen
     resetpsf
-    topology $::env(ICBKDIR)/top_all36_prot.rtf
+    topology $workingDir/top_all36_prot.rtf
     pdbalias residue HOH TIP3
     pdbalias atom TIP3 O OH2
     pdbalias atom TIP3 OW OH2
@@ -61,16 +87,16 @@ proc ::ICBK::combinePoreProtein {args} {
     guesscoord
     writepsf $proname-final.psf
     writepdb $proname-final.pdb
-    mol delete all
+    mol delete top
 
     # combine graphene channel
     resetpsf
-    readpsf $::env(ICBKDIR)/nanopore.psf
-    coordpdb $::env(ICBKDIR)/nanopore.pdb
+    readpsf $workingDir/nanopore.psf
+    coordpdb $workingDir/nanopore.pdb
     readpsf $proname-final.psf
     coordpdb $proname-final.pdb
-    writepsf $::env(ICBKDIR)/gra+pro.psf
-    writepdb $::env(ICBKDIR)/gra+pro.pdb
+    writepsf $workingDir/gra+pro.psf
+    writepdb $workingDir/gra+pro.pdb
     resetpsf
  
 }
@@ -170,6 +196,15 @@ proc ::ICBK::readDistanceGrid {args} {
 
 
 proc ::ICBK::predictCurrent {args} {
+    set nargs [llength $args]
+    if {$nargs != 2} {
+	puts "Error! Incorrect number of arguments."
+	puts "GUI must supply molarity, voltage to [lindex [info level [info level]] 0]"
+    }
+    
+    set molarity [lindex [lindex $args 0] 0]
+    set voltage [lindex [lindex $args 0] 1]
+
     set workingDir $::env(ICBKDIR)
     ########parameter is:a=4.1 b=0.25
     set kmin 0
@@ -194,17 +229,17 @@ proc ::ICBK::predictCurrent {args} {
     
     #openpore current parameters 
     set dl 1.0    ;#bin length of nanochannel along z direction
-    set cutz0 -20.0 ;#left boundary
-    set cutz1 20.0  ;#right boundary   
-    set E [expr 300.0/40.176]  ;#unit mv/A
-    set V [expr $E*($cutz1-$cutz0)]   ;#unit mv
+    set cutz0 -20.0 ;#top boundary
+    set cutz1 20.0  ;#bottom boundary   
+    set E [expr 1000 * $voltage/40.176]  ;#unit mV/Angstrom
+    set V [expr $E*($cutz1-$cutz0)]   ;#unit mV
     set r 30.0    ;#unit A
     set n [expr  int(($cutz1-$cutz0)/$dl)]  
     set pi 3.141592654
     set S [expr $pi*$r*$r]
     set I 62.5106    ;#unit nA
     set rou [expr $V*$S/$I/($cutz1-$cutz0)]
-    set sigma [expr 1/$rou]
+    set sigma [expr ($molarity / 2)/$rou] 
     set dcdfreq 1000   ;#
     set timestep 0.3    ;#1 ns
     #bin of each piece used for maxim's equation
@@ -277,9 +312,10 @@ proc ::ICBK::predictCurrent {args} {
 	#puts "$t $current"
 	puts $output "$t $current"
 	
-	set ::ICBK::test_current $current
+#	set ::ICBK::test_current $current
 	close $file
     }
     #close $file
     close $output
+    return $current
 }
